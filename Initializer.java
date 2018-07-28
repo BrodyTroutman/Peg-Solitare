@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javafx.application.Application;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -20,8 +21,12 @@ public class Initializer extends Application {
 	Circle firstClicked = placeholderCircle;
 	Circle secondClicked = placeholderCircle;
 	Circle middlePegc = placeholderCircle;
+	Group pegGroup;
 	Scene pegScene;
 	List<Circle> cl;
+	TextField tf1,tf2,tf3;
+	TextField tf4;
+	TextField tf5;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -31,8 +36,9 @@ public class Initializer extends Application {
 	public void start(Stage arg0) throws Exception {
 		placeholderCircle.setId("-1");
 
-		Group pegGroup = new Group();
+		pegGroup = new Group();
 		Stage pegStage = new Stage();
+		pegStage.setResizable(false);
 		pegStage.setTitle("Brody's Peg Solitare");
 		pegScene = new Scene(pegGroup, 350, 400);
 		pegStage.setScene(pegScene);
@@ -49,23 +55,35 @@ public class Initializer extends Application {
 		cl = new ArrayList<Circle>();
 
 		// Test fields to show ids of circles
-		TextField tf1 = new TextField();
+		tf1 = new TextField();
 		pegGroup.getChildren().add(tf1);
 		tf1.setEditable(false);
 
 		// Test fields to show ids of circles
-		TextField tf2 = new TextField();
+		tf2 = new TextField();
 		pegGroup.getChildren().add(tf2);
 		tf2.setEditable(false);
 		tf2.setTranslateX(200);
 
 		// Valid Checker
-		TextField tf3 = new TextField();
+		tf3 = new TextField();
 		pegGroup.getChildren().add(tf3);
 		tf3.setEditable(false);
 		tf3.setTranslateY(30);
 		
-		createResetButton(pegGroup);
+		tf4 = new TextField();
+		pegGroup.getChildren().add(tf4);
+		tf4.setEditable(false);
+		tf4.setTranslateY(60);
+		
+		tf5 = new TextField();
+		pegGroup.getChildren().add(tf5);
+		tf5.setEditable(false);
+		tf5.setTranslateY(90);
+		tf5.setPrefWidth(350);
+		tf5.setAlignment(Pos.CENTER);
+		
+		createResetButton();
 		
 		// CIRCLES INITIALIZATION
 		// Row by Row
@@ -73,16 +91,20 @@ public class Initializer extends Application {
 			double offx = 0;
 			// Column by column
 			for (int j = i; 5 > j; ++j) {
-				Circle tempCircle = new Circle(x + offx, y, 10, Color.GOLD);
-				// Make Gold
+				Circle tempCircle = new Circle(x + offx, y , 10, Color.GREEN);
+				
+				Text tempText = new Text(x + offx - 5, y - 15, Integer.toString(id));
+				tempText.setFill(Color.BLACK);
+				tempText.setStrokeWidth(.5);
+				// Make GREEN
 				tempCircle.setStrokeWidth(2);
-				tempCircle.setStroke(Color.GOLD);
+				tempCircle.setStroke(Color.GREEN);
 				// Keep track of circles
 				tempCircle.setId(Integer.toString(id));
 				// Toggle outline color on click
 				tempCircle.setOnMouseClicked((MouseEvent e) -> {
 					if (tempCircle.getStroke().equals(Color.BLUE)) {
-						tempCircle.setStroke(Color.GOLD);
+						tempCircle.setStroke(Color.GREEN);
 					} else {
 						tempCircle.setStroke(Color.BLUE);
 					}
@@ -102,7 +124,8 @@ public class Initializer extends Application {
 							tf3.setText("VALID");
 							firstClicked.setFill(Color.BLUE);
 							middlePegc.setFill(Color.BLUE);
-							secondClicked.setFill(Color.GOLD);
+							secondClicked.setFill(Color.GREEN);
+							checkIfSolved();
 						} else {
 							tf3.setText("INVALID");
 						}
@@ -110,8 +133,8 @@ public class Initializer extends Application {
 						// Do valid move
 
 						// reset first & secondClicked
-						firstClicked.setStroke(Color.GOLD);
-						secondClicked.setStroke(Color.GOLD);
+						firstClicked.setStroke(Color.GREEN);
+						secondClicked.setStroke(Color.GREEN);
 						// reset placeholders to placeholder Circle.
 						firstClicked = placeholderCircle;
 						secondClicked = placeholderCircle;
@@ -119,6 +142,7 @@ public class Initializer extends Application {
 				});
 				cl.add(tempCircle);
 				pegGroup.getChildren().add(tempCircle);
+				pegGroup.getChildren().add(tempText);
 				offx += 60;
 				id += 2;
 			}
@@ -128,11 +152,9 @@ public class Initializer extends Application {
 			y += 50;
 		}
 		Random rand = new Random();
-		int n = rand.nextInt(14) + 4;
-		Circle myC = (Circle) pegGroup.getChildren().get(n);
-		myC.setFill(Color.BLUE);
-		for (Circle c : cl) {
-		}
+		int n = rand.nextInt(15) + 0;
+		cl.get(n).setFill(Color.BLUE);
+		
 		pegStage.show();
 	}
 
@@ -160,26 +182,106 @@ public class Initializer extends Application {
 			}
 		}
 		
-		return (firstClicked.getFill() == Color.GOLD
+		return (firstClicked.getFill() == Color.GREEN
+				&& middlePegc.getFill() == Color.GREEN
 				&& secondClicked.getFill() == Color.BLUE
-				&& middlePegc.getFill() == Color.GOLD);	
+				);	
 	}
 	
-	public void createResetButton(Group pegGroup) {
+	public void createResetButton() {
 		Button reset = new Button("RESET");
 		reset.setId("RESET");
 		reset.setOnAction((event) -> {
 			for (Circle c : cl) {
-				c.setFill(Color.GOLD);
-				c.setStroke(Color.GOLD);
+				c.setFill(Color.GREEN);
+				c.setStroke(Color.GREEN);
 			}
 			Random rand = new Random();
-			int n = rand.nextInt(15) + 4;
-			Circle myC = (Circle) pegGroup.getChildren().get(n);
-			myC.setFill(Color.BLUE);
+			int n = rand.nextInt(15) + 0;
+			cl.get(n).setFill(Color.BLUE);
+			tf1.setText("");
+			tf2.setText("");
+			tf3.setText("");
+			tf4.setText("");
+			tf5.setText("");
+			
 		});
 		reset.setLayoutY(30);
 		reset.setLayoutX(200);
 		pegGroup.getChildren().add(reset);
+	}
+	
+	public void checkIfSolved() {
+		boolean foundAMove = false;
+		for (Circle c : cl) {
+			int cid = Integer.parseInt(c.getId());
+			if (
+				pegsExist(cid, cid + 4) ||
+				pegsExist(cid, cid - 4) ||
+				pegsExist(cid, cid + 18) ||
+				pegsExist(cid, cid - 18) ||
+				pegsExist(cid, cid + 22) ||
+				pegsExist(cid, cid - 22)
+			)
+			{
+				//System.out.println("You have at least one move left");
+				foundAMove = true;
+				break;
+			}
+			
+			}
+		if (!foundAMove) {
+		tf4.setText("No Moves Available");
+		int remain = 0;
+		for (Circle c2 : cl) {
+			if (c2.getFill() == Color.GREEN) { ++remain; }
+		}
+		switch (remain) {
+			case 1: tf5.setText("You're Genius"); break;
+			case 2: tf5.setText("You're Purty Smart"); break;
+			case 3: tf5.setText("You're Just Plain Dumb"); break;
+			default: tf5.setText("You're Just Plain \"EG-NO-RA-MOOSE");
+		}
+		}
+		
+	}
+	
+	public boolean pegsExist(int first, int second) {
+		int difference = Math.abs(first - second);
+		int middle;
+		if (first < second) {
+			middle = first + (difference/2);
+		}
+		else {
+			middle = first - (difference/2);
+		}
+		
+		Circle fpeg = null;
+		Circle mpeg = null;
+		Circle speg = null;
+		for (Circle c : cl) {
+			int cid = Integer.parseInt(c.getId());
+			if (cid == first) {
+				fpeg = c;
+			}
+			if (cid == middle) {
+				mpeg = c;
+			}
+			if (cid == second) {
+				speg = c;
+			}
+		}
+		
+		if (fpeg != null && mpeg != null && speg != null) {
+			if (fpeg.getFill() == Color.GREEN &&
+					mpeg.getFill() == Color.GREEN &&
+					speg.getFill() == Color.BLUE) {
+
+				tf4.setText("Possible Move " + fpeg.getId() + " " + mpeg.getId() + " " + speg.getId() );
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }
