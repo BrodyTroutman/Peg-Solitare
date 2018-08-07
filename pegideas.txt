@@ -1,0 +1,3 @@
+Modify Board Appearance
+Timer for each game (toggle?)
+Earn Color Choices - Points for doing good?
