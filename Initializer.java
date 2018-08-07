@@ -18,7 +18,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.SingleSelectionModel;
 import javafx.application.Platform;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Initializer extends Application {
 
@@ -39,6 +47,7 @@ public class Initializer extends Application {
 	SingleSelectionModel<String> model;
 	String validMove = "";
 	boolean showHints;
+	ComboBox<String> picker1,picker2;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -46,20 +55,17 @@ public class Initializer extends Application {
 
 	@Override
 	public void start(Stage arg0) throws Exception {
-		placeholderCircle.setId("-1");
 
+		placeholderCircle.setId("-1");
 		pegGroup = new Group();
 		Stage pegStage = new Stage();
 		pegStage.setResizable(false);
 		pegStage.setTitle("Bemu's Peg Solitare");
-		pegScene = new Scene(pegGroup, 400, 400);
+		pegScene = new Scene(pegGroup, 400, 430);
 		pegStage.setScene(pegScene);
 		// BUILD LOGIC TO SUPPORT CLICKING, LIKE BELOW. BREAK OUT INTO CONTROLLER? AT
 		// LEAST A FUNCTION
 
-		// X&Y = Coordinates where to draw circles
-		double x = 80;
-		double y = 180;
 		// ID = ID of circle
 		int id = 1;
 		int idincr = 1;
@@ -91,7 +97,7 @@ public class Initializer extends Application {
 		tf5 = new Text();
 		tf5.setStyle("-fx-font: 18 arial;");
 		HBox box = new HBox();
-		box.setTranslateY(120);
+		box.setTranslateY(150);
 		box.setPrefWidth(pegScene.getWidth());
 		box.getChildren().add(tf5);
 		box.setAlignment(Pos.CENTER);
@@ -106,19 +112,16 @@ public class Initializer extends Application {
 				hints.setText("HIDE HINTS");
 				tf4.setText(validMove);
 				showHints = true;
-			}else {
+			} else {
 				hints.setText("SHOW HINTS");
 				tf4.setText("");
 				showHints = false;
 			}
 		});
-		
-		
-		
-		
-		ComboBox<String> picker1 = new ComboBox<String>();
-		ComboBox<String> picker2 = new ComboBox<String>();
-		//PULL LIST OF COLORS FROM FILE & ADD TO BOTH COMBOBOXES
+
+		picker1 = new ComboBox<String>();
+		picker2 = new ComboBox<String>();
+		// PULL LIST OF COLORS FROM FILE & ADD TO BOTH COMBOBOXES
 		InputStream in = getClass().getResourceAsStream("/colorlist.txt");
 		Scanner input = new Scanner(in);
 		while (input.hasNextLine()) {
@@ -127,35 +130,30 @@ public class Initializer extends Application {
 			picker2.getItems().add(color);
 		}
 		input.close();
-		//picker1.getItems().addAll("RED", "BLUE", "GREEN", "AQUAMARINE", "BLACK", "GRAY", "PINK");
 		picker1.setValue("GREEN");
-		//System.out.print(picker1.getSelectionModel().getSelectedItem());
 		p1Value = picker1.getSelectionModel().getSelectedItem();
 		picker1.setLayoutY(90);
 		pegGroup.getChildren().add(picker1);
 
-		
-		//picker2.getItems().addAll("RED", "BLUE", "GREEN", "AQUAMARINE", "BLACK", "GRAY", "PINK");
 		picker2.setValue("BLUE");
-		//System.out.print(picker2.getSelectionModel().getSelectedItem());
+		// System.out.print(picker2.getSelectionModel().getSelectedItem());
 		p2Value = picker2.getSelectionModel().getSelectedItem();
-		//System.out.println(p2Value);
+		// System.out.println(p2Value);
 		picker2.setLayoutY(90);
 		picker2.setLayoutX(200);
 		pegGroup.getChildren().add(picker2);
-		
-		
-		
+
+		if (settingsExist()) {
+			picker1.setValue(readSettings(0));
+			color1 = Color.valueOf(readSettings(0));
+			picker2.setValue(readSettings(1));
+			color2 = Color.valueOf(readSettings(1));
+		}
 
 		picker1.setOnAction((event) -> {
-			//System.out.println(p1Value);
+			// System.out.println(p1Value);
 			if (!picker1.getValue().equals(picker2.getValue())) {
-				for (Circle c : cl) {
-					c.setStroke(Color.valueOf(picker1.getValue()));
-					if (c.getFill().equals(color1)) {
-						c.setFill(Color.valueOf(picker1.getValue()));
-					}
-				}
+				adjustAllPegs(Color.valueOf(picker1.getValue()), color1);
 				color1 = Color.valueOf(picker1.getValue());
 				p1Value = picker1.getSelectionModel().getSelectedItem();
 			} else {
@@ -170,15 +168,11 @@ public class Initializer extends Application {
 			model = picker2.getSelectionModel();
 		});
 		picker2.setOnAction((event) -> {
-			//System.out.println("Selected " + picker2.getValue());
-			//System.out.println("pickr1 " + picker1.getValue());
-			//System.out.println("p2Value = " + p2Value);
+			// System.out.println("Selected " + picker2.getValue());
+			// System.out.println("pickr1 " + picker1.getValue());
+			// System.out.println("p2Value = " + p2Value);
 			if (!picker2.getValue().equals(picker1.getValue())) {
-				for (Circle c : cl) {
-					if (c.getFill().equals(color2)) {
-						c.setFill(Color.valueOf(picker2.getValue()));
-					}
-				}
+				adjustAllPegs(Color.valueOf(picker2.getValue()),color2);
 				color2 = Color.valueOf(picker2.getValue());
 				p2Value = picker2.getSelectionModel().getSelectedItem();
 				// System.out.println(p2Value);
@@ -195,8 +189,17 @@ public class Initializer extends Application {
 
 		createResetButton();
 
+		createSaveButton();
+
+		createDefaultButton();
+
 		// CIRCLES INITIALIZATION
 		// Row by Row
+
+		// X&Y = Coordinates where to draw circles
+		double x = 80;
+		double y = 210;
+
 		for (int i = 0; i < 5; ++i) {
 			double offx = 0;
 			// Column by column
@@ -221,30 +224,33 @@ public class Initializer extends Application {
 
 					// THIS LOGIC SHOULD PROBABLY GO WHEN YOU CLICK ON SCENE
 					// System.out.println(tempCircle.getId());
-					tf1.setText(tempCircle.getId());
-					tf2.setText(firstClicked.getId());
+
 					// if 0/2 circles clicked, set to first. Else Assume you clicked 1/2 already,
 					// clicking second.(reseting on 2)
 					if (firstClicked.getId().equals("-1")) {
+						tf1.setText(tempCircle.getId());
 						firstClicked = tempCircle;
 					} else {
+						tf2.setText(firstClicked.getId());
 						secondClicked = tempCircle;
 						// Check valid move //IF (isMoveValid()){doMove();}
 						if (isValidMove() && pegsExist()) {
 							tf3.setText("VALID");
 							firstClicked.setFill(color2);
+							firstClicked.setStroke(color2);
 							middlePegc.setFill(color2);
+							middlePegc.setStroke(color2);
 							secondClicked.setFill(color1);
 							checkIfSolved();
 						} else {
 							tf3.setText("INVALID");
+
+							// Do valid move
+
+							// reset first & secondClicked
+							firstClicked.setStroke(firstClicked.getFill());
+							secondClicked.setStroke(secondClicked.getFill());
 						}
-
-						// Do valid move
-
-						// reset first & secondClicked
-						firstClicked.setStroke(color1);
-						secondClicked.setStroke(color1);
 						// reset placeholders to placeholder Circle.
 						firstClicked = placeholderCircle;
 						secondClicked = placeholderCircle;
@@ -263,7 +269,9 @@ public class Initializer extends Application {
 		}
 		Random rand = new Random();
 		int n = rand.nextInt(15) + 0;
-		cl.get(n).setFill(color2);
+		Circle rando = cl.get(n);
+		rando.setStroke(color2);
+		rando.setFill(color2);
 
 		pegStage.show();
 	}
@@ -303,11 +311,13 @@ public class Initializer extends Application {
 		reset.setOnAction((event) -> {
 			for (Circle c : cl) {
 				c.setFill(color1);
-				c.setStroke(color2);
+				c.setStroke(color1);
 			}
 			Random rand = new Random();
 			int n = rand.nextInt(15) + 0;
-			cl.get(n).setFill(color2);
+			Circle rando = cl.get(n);
+			rando.setStroke(color2);
+			rando.setFill(color2);
 			tf1.setText("");
 			tf2.setText("");
 			tf3.setText("");
@@ -352,7 +362,7 @@ public class Initializer extends Application {
 				tf5.setText("You're Just Plain Dumb");
 				break;
 			default:
-				tf5.setText("You're Just Plain \"EG-NO-RA-MOOSE");
+				tf5.setText("You're Just Plain \"EG-NO-RA-MOOSE\"");
 			}
 		}
 
@@ -385,7 +395,7 @@ public class Initializer extends Application {
 
 		if (fpeg != null && mpeg != null && speg != null) {
 			if (fpeg.getFill() == color1 && mpeg.getFill() == color1 && speg.getFill() == color2) {
-				
+
 				validMove = ("Possible Move " + fpeg.getId() + " " + mpeg.getId() + " " + speg.getId());
 				if (showHints) {
 					tf4.setText(validMove);
@@ -393,7 +403,115 @@ public class Initializer extends Application {
 				return true;
 			}
 		}
-
 		return false;
 	}
+
+	public void createSaveButton() throws IOException {
+		Button save = new Button("SAVE COLORS");
+		save.setId("SAVE");
+		save.setLayoutY(120);
+		pegGroup.getChildren().add(save);
+
+		ensureSettings();
+
+		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "zzzPegGame"
+				+ File.separator + "settings.txt";
+		save.setOnAction((event) -> {
+
+			File customDir = new File(path);
+			PrintWriter writer;
+			try {
+				writer = new PrintWriter(customDir);
+				writer.write("");
+				writer.append(picker1.getValue() + "," + picker2.getValue());
+				writer.close();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		});
+
+	}
+
+	public void ensureSettings() throws IOException {
+		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame";
+		File customDir = new File(path);
+		// System.out.println(customDir.getPath());
+		if (customDir.exists() || customDir.mkdirs()) {
+			// System.out.println("hello");
+			path += File.separator + "settings.txt";
+			File cd2 = new File(path);
+			cd2.createNewFile();
+		}
+	}
+
+	public boolean settingsExist() {
+		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame";
+		File customDir = new File(path);
+		return customDir.exists();
+	}
+
+	public String readSettings(int pos) throws IOException {
+		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame"
+				+ File.separator + "settings.txt";
+		String settings = readFile(path, Charset.defaultCharset());
+		String color = settings.split(",")[pos];
+		return color;
+	}
+
+	 public String readFile(String path, Charset encoding) throws IOException {
+		byte[] encoded = Files.readAllBytes(Paths.get(path));
+		return new String(encoded, encoding);
+	}
+	
+	public void createDefaultButton() {
+		Button defColor = new Button("DEFAULT");
+		defColor.setId("DEFAULT");
+		defColor.setLayoutY(120);
+		defColor.setLayoutX(200);
+		pegGroup.getChildren().add(defColor);
+		
+		defColor.setOnAction((event) -> {
+			String color1Temp = null;
+			try {
+				color1Temp = readSettings(0);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			String color2Temp = null;
+			try {
+				color2Temp = readSettings(1);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			adjustAllPegs(Color.valueOf(color1Temp) ,color1);
+			adjustAllPegs(Color.valueOf(color2Temp),color2);
+			color1 = Color.valueOf(color1Temp);
+			color2 = Color.valueOf(color2Temp);
+			picker1.setValue(color1Temp);
+			picker2.setValue(color2Temp);
+		});
+		
+		
+	}
+
+	public void adjustAllPegs(Color newColor, Color oldColor) {
+		for (Circle c : cl) {
+			if (c.getStroke().equals(oldColor)) {
+				c.setStroke(newColor);
+			}
+			if (c.getFill().equals(oldColor)) {
+				c.setFill(newColor);
+			}
+			
+		}
+		
+	}
+	
+
 }
