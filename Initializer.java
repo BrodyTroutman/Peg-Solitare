@@ -412,12 +412,17 @@ public class Initializer extends Application {
 		save.setLayoutY(120);
 		pegGroup.getChildren().add(save);
 
-		ensureSettings();
+		
 
-		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "zzzPegGame"
+		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame"
 				+ File.separator + "settings.txt";
 		save.setOnAction((event) -> {
-
+			try {
+				ensureSettings();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			File customDir = new File(path);
 			PrintWriter writer;
 			try {
