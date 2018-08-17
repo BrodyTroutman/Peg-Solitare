@@ -5,3 +5,4 @@ Night Mode
 Undo Moves
 redo Moves
 Show Last Moves
+Options Menu
