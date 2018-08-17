@@ -2,6 +2,6 @@ Modify Board Appearance
 Timer for each game (toggle?)
 Earn Color Choices - Points for doing good?
 Night Mode
-undo moves
-redo moves
-show last moves
+Undo Moves
+redo Moves
+Show Last Moves
