@@ -47,7 +47,6 @@ public class Initializer extends Application {
 	Group pegGroup;
 	Scene pegScene;
 	List<Circle> cl;
-	TextField tf1, tf2, tf3;
 	TextField tf4;
 	Text tf5;
 	Label tf6;
@@ -56,13 +55,13 @@ public class Initializer extends Application {
 	String p1Value = "";
 	String p2Value = "";
 	SingleSelectionModel<String> model;
-	String validMove = "";
+	Move validMove = null;
 	boolean showHints;
 	static ComboBox<String> picker1;
 	static ComboBox<String> picker2;
 	myTimer timer = new myTimer();
-	OopsStack os = new OopsStack();
-	RedoStack rs = new RedoStack();
+	MoveStack os = new MoveStack();
+	MoveStack rs = new MoveStack();
 	boolean finished = false;
 
 	public static void main(String[] args) {
@@ -77,7 +76,7 @@ public class Initializer extends Application {
 		Stage pegStage = new Stage();
 		pegStage.setResizable(false);
 		pegStage.setTitle("Bemu's Peg Solitare");
-		pegScene = new Scene(pegGroup, 400, 460); // width, height
+		pegScene = new Scene(pegGroup, 400, 360); // width, height
 		pegStage.setScene(pegScene);
 		// BUILD LOGIC TO SUPPORT CLICKING, LIKE BELOW. BREAK OUT INTO CONTROLLER? AT
 		// LEAST A FUNCTION
@@ -88,29 +87,10 @@ public class Initializer extends Application {
 		// cl = circle list, keep track of circles to count remaining at end
 		cl = new ArrayList<Circle>();
 
-		// Test fields to show ids of circles
-		tf1 = new TextField();
-		pegGroup.getChildren().add(tf1);
-		tf1.setEditable(false);
-		tf1.setTranslateY(30);
-
-		// Test fields to show ids of circles
-		tf2 = new TextField();
-		pegGroup.getChildren().add(tf2);
-		tf2.setEditable(false);
-		tf2.setTranslateX(200);
-		tf2.setTranslateY(30);
-
-		// Valid Checker
-		tf3 = new TextField();
-		pegGroup.getChildren().add(tf3);
-		tf3.setEditable(false);
-		tf3.setTranslateY(60);
-
 		tf4 = new TextField();
 		pegGroup.getChildren().add(tf4);
 		tf4.setEditable(false);
-		tf4.setTranslateY(90);
+		tf4.setTranslateY(60);
 
 		tf5 = new Text();
 		tf5.setStyle("-fx-font: 18 arial;");
@@ -130,13 +110,14 @@ public class Initializer extends Application {
 		tf6.textProperty().bind(timer.time.asString());
 
 		Button hints = new Button("SHOW HINTS");
+		
 		hints.setLayoutX(200);
-		hints.setLayoutY(90);
+		hints.setLayoutY(60);
 		pegGroup.getChildren().add(hints);
 		hints.setOnAction((event) -> {
 			if (hints.getText().equals("SHOW HINTS")) {
 				hints.setText("HIDE HINTS");
-				tf4.setText(validMove);
+				tf4.setText("Possible Move " + validMove.toString());
 				showHints = true;
 			} else {
 				hints.setText("SHOW HINTS");
@@ -144,6 +125,7 @@ public class Initializer extends Application {
 				showHints = false;
 			}
 		});
+		
 
 		picker1 = new ComboBox<String>();
 		picker2 = new ComboBox<String>();
@@ -159,13 +141,13 @@ public class Initializer extends Application {
 		picker1.setValue("GREEN");
 		picker2.getItems().remove("GREEN");
 		p1Value = picker1.getSelectionModel().getSelectedItem();
-		picker1.setLayoutY(120);
+		picker1.setLayoutY(30);
 		pegGroup.getChildren().add(picker1);
 
 		picker2.setValue("BLUE");
 		picker1.getItems().remove("BLUE");
 		p2Value = picker2.getSelectionModel().getSelectedItem();
-		picker2.setLayoutY(120);
+		picker2.setLayoutY(30);
 		picker2.setLayoutX(200);
 		pegGroup.getChildren().add(picker2);
 
@@ -219,15 +201,12 @@ public class Initializer extends Application {
 
 		createMenuBar();
 
-		createUndoButton();
-
-		createRedoButton();
 		// CIRCLES INITIALIZATION
 		// Row by Row
 
 		// X&Y = Coordinates where to draw circles
 		double x = 80;
-		double y = 240;
+		double y = 140;
 
 		for (int i = 0; i < 5; ++i) {
 			double offx = 0;
@@ -261,18 +240,15 @@ public class Initializer extends Application {
 					// if 0/2 circles clicked, set to first. Else Assume you clicked 1/2 already,
 					// clicking second.(reseting on 2)
 					if (firstClicked.getId().equals("-1")) {
-						tf1.setText(tempCircle.getId());
 						firstClicked = tempCircle;
 					} else {
-						tf2.setText(tempCircle.getId());
 						secondClicked = tempCircle;
 						// Check valid move //IF (isMoveValid()){doMove();}
 						if (isValidMove() && pegsExist()) {
+							rs.clear();
+							os.push(new Move(firstClicked.getId(), middlePegc.getId(), secondClicked.getId()));
 
-							OopsStack.push(new Move(firstClicked.getId(), middlePegc.getId(), secondClicked.getId()));
 
-
-							tf3.setText("VALID");
 							firstClicked.setFill(color2);
 							firstClicked.setStroke(color2);
 							middlePegc.setFill(color2);
@@ -280,7 +256,6 @@ public class Initializer extends Application {
 							secondClicked.setFill(color1);
 							checkIfSolved();
 						} else {
-							tf3.setText("INVALID");
 
 							// Do valid move
 
@@ -319,6 +294,8 @@ public class Initializer extends Application {
 
 		ColorPicker p = new ColorPicker();
 		settings.getChildren().add(p);
+		
+		pegGroup.requestFocus();
 		pegStage.show();
 	}
 
@@ -345,7 +322,6 @@ public class Initializer extends Application {
 				middlePegc = c;
 			}
 		}
-
 		return (firstClicked.getFill() == color1 && middlePegc.getFill() == color1
 				&& secondClicked.getFill() == color2);
 	}
@@ -367,17 +343,14 @@ public class Initializer extends Application {
 			Circle rando = cl.get(n);
 			rando.setStroke(color2);
 			rando.setFill(color2);
-			tf1.setText("");
-			tf2.setText("");
-			tf3.setText("");
 			tf4.setText("");
 			tf5.setText("");
 			os.clear();
 			rs.clear();
 
 		});
-		reset.setLayoutY(60);
-		reset.setLayoutX(200);
+		reset.setLayoutY(90);
+		reset.setLayoutX(0);
 		pegGroup.getChildren().add(reset);
 	}
 
@@ -397,7 +370,7 @@ public class Initializer extends Application {
 			timer.stop();
 			if (!finished) { 
 			tf4.setText("No Moves Available");
-			validMove = "No Moves Available";
+			validMove = null;
 			int remain = 0;
 			for (Circle c2 : cl) {
 				if (c2.getFill() == color1) {
@@ -453,10 +426,9 @@ public class Initializer extends Application {
 
 		if (fpeg != null && mpeg != null && speg != null) {
 			if (fpeg.getFill() == color1 && mpeg.getFill() == color1 && speg.getFill() == color2) {
-
-				validMove = ("Possible Move " + fpeg.getId() + " " + mpeg.getId() + " " + speg.getId());
+				validMove = new Move(fpeg.getId(),mpeg.getId(),speg.getId());
 				if (showHints) {
-					tf4.setText(validMove);
+					tf4.setText("Possible Move " + validMove.toString());
 				}
 				return true;
 			}
@@ -565,13 +537,31 @@ public class Initializer extends Application {
 
 	public void createMenuBar() {
 		MenuBar mb = new MenuBar();
+		
 		Menu file = new Menu("File");
+		
 		MenuItem save = new MenuItem("Save Colors");
-		save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+		save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
+		
 		MenuItem load = new MenuItem("Load Colors");
-		load.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
-		file.getItems().addAll(save, load);
+		load.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.SHORTCUT_DOWN));
+		
+		MenuItem undo = new MenuItem("Undo Last Move");
+		undo.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN));
+		
+		
+		MenuItem redo = new MenuItem("Redo Last Move");
+		redo.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.SHORTCUT_DOWN));
+		
+		
+		file.getItems().addAll(save, load, undo, redo);
+		
+		
+		
 		mb.getMenus().add(file);
+		
+		
+		
 		mb.setPrefWidth(pegScene.getWidth());
 		save.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
@@ -585,41 +575,37 @@ public class Initializer extends Application {
 				load();
 			}
 		});
+		redo.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg0) {
+				// TODO Auto-generated method stub
+				if (!rs.isEmpty()) {
+					Move m = rs.pop();
+					redoMove(m);
+					os.push(m);
+				}
+			}
+		});
+		undo.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent arg0) {
+				// TODO Auto-generated method stub
+				if (!os.isEmpty()) {
+					Move m = os.pop();
+					undoMove(m);
+					rs.push(m);
+				}
+			}
+		});
 
 		pegGroup.getChildren().add(mb);
 
 	}
 
-	public void createUndoButton() {
-		Button undo = new Button("UNDO");
-		undo.setTranslateY(150);
-		undo.setOnAction((event) -> {
-			if (!OopsStack.isEmpty()) {
-				Move m = OopsStack.pop();
-				unmakeMove(m);
-				rs.push(m);
-			}
-			pegGroup.requestFocus();
-		});
-		pegGroup.getChildren().add(undo);
-	}
+	
+	
 
-	@SuppressWarnings("static-access")
-	public void createRedoButton() {
-		Button redo = new Button("REDO");
-		redo.setTranslateY(150);
-		redo.setTranslateX(55);
-		redo.setOnAction((event) -> {
-			if (!rs.isEmpty()) {
-			Move m = rs.pop();
-			redoMove(m);
-			os.push(m);
-			}
-		});
-		pegGroup.getChildren().add(redo);
-	}
-
-	public void unmakeMove(Move m) {
+	public void undoMove(Move m) {
 		// Can make cleaner by making a Peg Class
 		String[] movePegs = {m.getFirst(), m.getSecond(), m.getThird()};
 		for (Circle c : cl) {
@@ -636,6 +622,7 @@ public class Initializer extends Application {
 			}
 
 		}
+		checkIfSolved();
 	}
 	
 	public void redoMove(Move m) {
@@ -653,8 +640,9 @@ public class Initializer extends Application {
 					}
 				}
 			}
-
 		}
+		checkIfSolved();
 	}
+	
 
 }

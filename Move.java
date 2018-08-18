@@ -33,9 +33,9 @@ public class Move {
 	}
 	
 	public ArrayList<String> getMove() {
-		return all;
-		
+		return all;	
 	}
+	
 	
 	
 }
