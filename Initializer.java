@@ -9,6 +9,7 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -18,7 +19,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.SingleSelectionModel;
 import javafx.application.Platform;
-
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.MenuBar;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,6 +33,10 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 
 public class Initializer extends Application {
 
@@ -40,6 +50,7 @@ public class Initializer extends Application {
 	TextField tf1, tf2, tf3;
 	TextField tf4;
 	Text tf5;
+	Label tf6;
 	Color color1 = Color.GREEN;
 	Color color2 = Color.BLUE;
 	String p1Value = "";
@@ -47,7 +58,12 @@ public class Initializer extends Application {
 	SingleSelectionModel<String> model;
 	String validMove = "";
 	boolean showHints;
-	ComboBox<String> picker1,picker2;
+	static ComboBox<String> picker1;
+	static ComboBox<String> picker2;
+	myTimer timer = new myTimer();
+	OopsStack os = new OopsStack();
+	RedoStack rs = new RedoStack();
+	boolean finished = false;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -61,7 +77,7 @@ public class Initializer extends Application {
 		Stage pegStage = new Stage();
 		pegStage.setResizable(false);
 		pegStage.setTitle("Bemu's Peg Solitare");
-		pegScene = new Scene(pegGroup, 400, 430);
+		pegScene = new Scene(pegGroup, 400, 460); // width, height
 		pegStage.setScene(pegScene);
 		// BUILD LOGIC TO SUPPORT CLICKING, LIKE BELOW. BREAK OUT INTO CONTROLLER? AT
 		// LEAST A FUNCTION
@@ -76,36 +92,46 @@ public class Initializer extends Application {
 		tf1 = new TextField();
 		pegGroup.getChildren().add(tf1);
 		tf1.setEditable(false);
+		tf1.setTranslateY(30);
 
 		// Test fields to show ids of circles
 		tf2 = new TextField();
 		pegGroup.getChildren().add(tf2);
 		tf2.setEditable(false);
 		tf2.setTranslateX(200);
+		tf2.setTranslateY(30);
 
 		// Valid Checker
 		tf3 = new TextField();
 		pegGroup.getChildren().add(tf3);
 		tf3.setEditable(false);
-		tf3.setTranslateY(30);
+		tf3.setTranslateY(60);
 
 		tf4 = new TextField();
 		pegGroup.getChildren().add(tf4);
 		tf4.setEditable(false);
-		tf4.setTranslateY(60);
+		tf4.setTranslateY(90);
 
 		tf5 = new Text();
 		tf5.setStyle("-fx-font: 18 arial;");
 		HBox box = new HBox();
-		box.setTranslateY(150);
+		box.setTranslateY(180);
 		box.setPrefWidth(pegScene.getWidth());
 		box.getChildren().add(tf5);
 		box.setAlignment(Pos.CENTER);
 		pegGroup.getChildren().add(box);
 
+		tf6 = new Label();
+		tf6.setStyle("-fx-font: 8 arial;");
+		HBox box6 = new HBox();
+		box6.setTranslateY(460);
+		box6.getChildren().add(tf6);
+		pegGroup.getChildren().add(box6);
+		tf6.textProperty().bind(timer.time.asString());
+
 		Button hints = new Button("SHOW HINTS");
 		hints.setLayoutX(200);
-		hints.setLayoutY(60);
+		hints.setLayoutY(90);
 		pegGroup.getChildren().add(hints);
 		hints.setOnAction((event) -> {
 			if (hints.getText().equals("SHOW HINTS")) {
@@ -131,15 +157,15 @@ public class Initializer extends Application {
 		}
 		input.close();
 		picker1.setValue("GREEN");
+		picker2.getItems().remove("GREEN");
 		p1Value = picker1.getSelectionModel().getSelectedItem();
-		picker1.setLayoutY(90);
+		picker1.setLayoutY(120);
 		pegGroup.getChildren().add(picker1);
 
 		picker2.setValue("BLUE");
-		// System.out.print(picker2.getSelectionModel().getSelectedItem());
+		picker1.getItems().remove("BLUE");
 		p2Value = picker2.getSelectionModel().getSelectedItem();
-		// System.out.println(p2Value);
-		picker2.setLayoutY(90);
+		picker2.setLayoutY(120);
 		picker2.setLayoutX(200);
 		pegGroup.getChildren().add(picker2);
 
@@ -151,8 +177,10 @@ public class Initializer extends Application {
 		}
 
 		picker1.setOnAction((event) -> {
-			// System.out.println(p1Value);
 			if (!picker1.getValue().equals(picker2.getValue())) {
+				
+				picker2.getItems().remove(picker1.getValue());
+				picker2.getItems().add(picker1.getItems().indexOf(p1Value),p1Value );
 				adjustAllPegs(Color.valueOf(picker1.getValue()), color1);
 				color1 = Color.valueOf(picker1.getValue());
 				p1Value = picker1.getSelectionModel().getSelectedItem();
@@ -168,14 +196,14 @@ public class Initializer extends Application {
 			model = picker2.getSelectionModel();
 		});
 		picker2.setOnAction((event) -> {
-			// System.out.println("Selected " + picker2.getValue());
-			// System.out.println("pickr1 " + picker1.getValue());
-			// System.out.println("p2Value = " + p2Value);
+			
 			if (!picker2.getValue().equals(picker1.getValue())) {
-				adjustAllPegs(Color.valueOf(picker2.getValue()),color2);
+
+				picker1.getItems().remove(picker2.getValue());
+				picker1.getItems().add(picker2.getItems().indexOf(p2Value),p2Value );
+				adjustAllPegs(Color.valueOf(picker2.getValue()), color2);
 				color2 = Color.valueOf(picker2.getValue());
 				p2Value = picker2.getSelectionModel().getSelectedItem();
-				// System.out.println(p2Value);
 			} else {
 				Platform.runLater(new Runnable() {
 					@Override
@@ -189,16 +217,17 @@ public class Initializer extends Application {
 
 		createResetButton();
 
-		createSaveButton();
+		createMenuBar();
 
-		createDefaultButton();
+		createUndoButton();
 
+		createRedoButton();
 		// CIRCLES INITIALIZATION
 		// Row by Row
 
 		// X&Y = Coordinates where to draw circles
 		double x = 80;
-		double y = 210;
+		double y = 240;
 
 		for (int i = 0; i < 5; ++i) {
 			double offx = 0;
@@ -216,6 +245,11 @@ public class Initializer extends Application {
 				tempCircle.setId(Integer.toString(id));
 				// Toggle outline color on click
 				tempCircle.setOnMouseClicked((MouseEvent e) -> {
+
+					if (!timer.running && !finished) {
+						timer.start();
+					}
+
 					if (tempCircle.getStroke().equals(color2)) {
 						tempCircle.setStroke(color1);
 					} else {
@@ -223,7 +257,6 @@ public class Initializer extends Application {
 					}
 
 					// THIS LOGIC SHOULD PROBABLY GO WHEN YOU CLICK ON SCENE
-					// System.out.println(tempCircle.getId());
 
 					// if 0/2 circles clicked, set to first. Else Assume you clicked 1/2 already,
 					// clicking second.(reseting on 2)
@@ -231,10 +264,14 @@ public class Initializer extends Application {
 						tf1.setText(tempCircle.getId());
 						firstClicked = tempCircle;
 					} else {
-						tf2.setText(firstClicked.getId());
+						tf2.setText(tempCircle.getId());
 						secondClicked = tempCircle;
 						// Check valid move //IF (isMoveValid()){doMove();}
 						if (isValidMove() && pegsExist()) {
+
+							OopsStack.push(new Move(firstClicked.getId(), middlePegc.getId(), secondClicked.getId()));
+
+
 							tf3.setText("VALID");
 							firstClicked.setFill(color2);
 							firstClicked.setStroke(color2);
@@ -273,6 +310,15 @@ public class Initializer extends Application {
 		rando.setStroke(color2);
 		rando.setFill(color2);
 
+		Group settings = new Group();
+
+		Rectangle blue = new Rectangle(410, 470); // width, height
+		blue.setFill(Color.WHITE);
+		settings.getChildren().add(blue);
+		// pegGroup.getChildren().add(settings);
+
+		ColorPicker p = new ColorPicker();
+		settings.getChildren().add(p);
 		pegStage.show();
 	}
 
@@ -285,7 +331,7 @@ public class Initializer extends Application {
 	public boolean pegsExist() {
 		int difference = (int) Math
 				.abs(Double.parseDouble(firstClicked.getId()) - Double.parseDouble(secondClicked.getId()));
-		// System.out.println(difference/2);
+	
 		int middlePeg;
 		if (Double.parseDouble(firstClicked.getId()) < Double.parseDouble(secondClicked.getId())) {
 			middlePeg = (Integer.parseInt(firstClicked.getId()) + (difference / 2));
@@ -293,7 +339,6 @@ public class Initializer extends Application {
 			middlePeg = (Integer.parseInt(firstClicked.getId()) - (difference / 2));
 		}
 
-		// System.out.println("middle peg #id = " + middlePeg);
 		for (Circle c : cl) {
 			int cid = Integer.parseInt(c.getId());
 			if (cid == middlePeg) {
@@ -304,15 +349,19 @@ public class Initializer extends Application {
 		return (firstClicked.getFill() == color1 && middlePegc.getFill() == color1
 				&& secondClicked.getFill() == color2);
 	}
-
+	//GOOD IDEA????
+	@SuppressWarnings("static-access")
 	public void createResetButton() {
 		Button reset = new Button("RESET");
 		reset.setId("RESET");
 		reset.setOnAction((event) -> {
+			timer.stop();
+			timer.time.set(0);
 			for (Circle c : cl) {
 				c.setFill(color1);
 				c.setStroke(color1);
 			}
+			finished = false;
 			Random rand = new Random();
 			int n = rand.nextInt(15) + 0;
 			Circle rando = cl.get(n);
@@ -323,9 +372,11 @@ public class Initializer extends Application {
 			tf3.setText("");
 			tf4.setText("");
 			tf5.setText("");
+			os.clear();
+			rs.clear();
 
 		});
-		reset.setLayoutY(30);
+		reset.setLayoutY(60);
 		reset.setLayoutX(200);
 		pegGroup.getChildren().add(reset);
 	}
@@ -336,13 +387,15 @@ public class Initializer extends Application {
 			int cid = Integer.parseInt(c.getId());
 			if (pegsExist(cid, cid + 4) || pegsExist(cid, cid - 4) || pegsExist(cid, cid + 18)
 					|| pegsExist(cid, cid - 18) || pegsExist(cid, cid + 22) || pegsExist(cid, cid - 22)) {
-				// System.out.println("You have at least one move left");
 				foundAMove = true;
 				break;
 			}
 
 		}
+		//CREATE CUSTOM EVENT TO FIRE AND DISABLE UNDO BUTTON??
 		if (!foundAMove) {
+			timer.stop();
+			if (!finished) { 
 			tf4.setText("No Moves Available");
 			validMove = "No Moves Available";
 			int remain = 0;
@@ -363,6 +416,11 @@ public class Initializer extends Application {
 				break;
 			default:
 				tf5.setText("You're Just Plain \"EG-NO-RA-MOOSE\"");
+			}
+			finished = true;
+			}
+			else {
+				tf5.setText("Good try, cheater");
 			}
 		}
 
@@ -406,45 +464,10 @@ public class Initializer extends Application {
 		return false;
 	}
 
-	public void createSaveButton() throws IOException {
-		Button save = new Button("SAVE COLORS");
-		save.setId("SAVE");
-		save.setLayoutY(120);
-		pegGroup.getChildren().add(save);
-
-		
-
-		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame"
-				+ File.separator + "settings.txt";
-		save.setOnAction((event) -> {
-			try {
-				ensureSettings();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			File customDir = new File(path);
-			PrintWriter writer;
-			try {
-				writer = new PrintWriter(customDir);
-				writer.write("");
-				writer.append(picker1.getValue() + "," + picker2.getValue());
-				writer.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-		});
-
-	}
-
-	public void ensureSettings() throws IOException {
+	public static void ensureSettings() throws IOException {
 		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame";
 		File customDir = new File(path);
-		// System.out.println(customDir.getPath());
 		if (customDir.exists() || customDir.mkdirs()) {
-			// System.out.println("hello");
 			path += File.separator + "settings.txt";
 			File cd2 = new File(path);
 			cd2.createNewFile();
@@ -465,44 +488,9 @@ public class Initializer extends Application {
 		return color;
 	}
 
-	 public String readFile(String path, Charset encoding) throws IOException {
+	public String readFile(String path, Charset encoding) throws IOException {
 		byte[] encoded = Files.readAllBytes(Paths.get(path));
 		return new String(encoded, encoding);
-	}
-	
-	public void createDefaultButton() {
-		Button defColor = new Button("DEFAULT");
-		defColor.setId("DEFAULT");
-		defColor.setLayoutY(120);
-		defColor.setLayoutX(200);
-		pegGroup.getChildren().add(defColor);
-		
-		defColor.setOnAction((event) -> {
-			String color1Temp = null;
-			try {
-				color1Temp = readSettings(0);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			String color2Temp = null;
-			try {
-				color2Temp = readSettings(1);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			adjustAllPegs(Color.valueOf(color1Temp) ,color1);
-			adjustAllPegs(Color.valueOf(color2Temp),color2);
-			color1 = Color.valueOf(color1Temp);
-			color2 = Color.valueOf(color2Temp);
-			picker1.setValue(color1Temp);
-			picker2.setValue(color2Temp);
-		});
-		
-		
 	}
 
 	public void adjustAllPegs(Color newColor, Color oldColor) {
@@ -513,10 +501,160 @@ public class Initializer extends Application {
 			if (c.getFill().equals(oldColor)) {
 				c.setFill(newColor);
 			}
-			
+
 		}
-		
+
+	}
+
+	public void save() {
+		String path = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "PegGame"
+				+ File.separator + "settings.txt";
+		try {
+			ensureSettings();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		File customDir = new File(path);
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter(customDir);
+			writer.write("");
+			writer.append(picker1.getValue() + "," + picker2.getValue());
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public void load() {
+		String color1Temp = null;
+		try {
+			color1Temp = readSettings(0);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		String color2Temp = null;
+		try {
+			color2Temp = readSettings(1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		adjustAllPegs(Color.valueOf(color1Temp), color1);
+		adjustAllPegs(Color.valueOf(color2Temp), color2);
+		color1 = Color.valueOf(color1Temp);
+		color2 = Color.valueOf(color2Temp);
+		picker1.setValue(color1Temp);
+		picker2.setValue(color2Temp);
+
+	}
+
+	// I like this code
+	/*
+	 * MenuItem newItem = MenuItemBuilder.create() .text("New") .accelerator(new
+	 * KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN)) .onAction(new
+	 * EventHandler<ActionEvent>() { public void handle(ActionEvent event) {
+	 * System.out.println("Ctrl-N"); } }) .build();
+	 */
+
+	public void createMenuBar() {
+		MenuBar mb = new MenuBar();
+		Menu file = new Menu("File");
+		MenuItem save = new MenuItem("Save Colors");
+		save.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
+		MenuItem load = new MenuItem("Load Colors");
+		load.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN));
+		file.getItems().addAll(save, load);
+		mb.getMenus().add(file);
+		mb.setPrefWidth(pegScene.getWidth());
+		save.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent e) {
+				save();
+			}
+		});
+		load.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent e) {
+				load();
+			}
+		});
+
+		pegGroup.getChildren().add(mb);
+
+	}
+
+	public void createUndoButton() {
+		Button undo = new Button("UNDO");
+		undo.setTranslateY(150);
+		undo.setOnAction((event) -> {
+			if (!OopsStack.isEmpty()) {
+				Move m = OopsStack.pop();
+				unmakeMove(m);
+				rs.push(m);
+			}
+			pegGroup.requestFocus();
+		});
+		pegGroup.getChildren().add(undo);
+	}
+
+	@SuppressWarnings("static-access")
+	public void createRedoButton() {
+		Button redo = new Button("REDO");
+		redo.setTranslateY(150);
+		redo.setTranslateX(55);
+		redo.setOnAction((event) -> {
+			if (!rs.isEmpty()) {
+			Move m = rs.pop();
+			redoMove(m);
+			os.push(m);
+			}
+		});
+		pegGroup.getChildren().add(redo);
+	}
+
+	public void unmakeMove(Move m) {
+		// Can make cleaner by making a Peg Class
+		String[] movePegs = {m.getFirst(), m.getSecond(), m.getThird()};
+		for (Circle c : cl) {
+			for (String s : movePegs) {
+				if (c.getId().equals(s)) {
+					if (c.getFill().equals(color1)) {
+						c.setFill(color2);
+						c.setStroke(color2);
+					}else {
+						c.setFill(color1);
+						c.setStroke(color1);
+					}
+				}
+			}
+
+		}
 	}
 	
+	public void redoMove(Move m) {
+		// Can make cleaner by making a Peg Class
+		String[] movePegs = {m.getFirst(), m.getSecond(), m.getThird()};
+		for (Circle c : cl) {
+			for (String s : movePegs) {
+				if (c.getId().equals(s)) {
+					if (c.getFill().equals(color1)) {
+						c.setFill(color2);
+						c.setStroke(color2);
+					}else {
+						c.setFill(color1);
+						c.setStroke(color1);
+					}
+				}
+			}
+
+		}
+	}
 
 }
