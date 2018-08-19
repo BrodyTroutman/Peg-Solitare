@@ -1,8 +1,11 @@
 Modify Board Appearance
 Timer for each game (toggle?)
 Earn Color Choices - Points for doing good?
-Night Mode
-Undo Moves
-redo Moves
+Night Mode ! DONE ! 
+Undo Moves ! DONE ! 
+Redo Moves ! DONE ! 
 Show Last Moves
 Options Menu
+
+Ideas for future projects:
+Rubiks cube AI solver + GUI step show-er.
