@@ -1,0 +1,96 @@
+* {
+	-fx-dark: #2A2A2A;
+	-fx-light: #E9E9E9;
+	-fx-high: #4C4C4C;
+}
+
+.combo-box .list-cell {
+	-fx-text-fill: -fx-light;
+	-fx-background: -fx-dark;
+	-fx-background-color: -fx-dark;
+}
+
+.combo-box {
+	-fx-border-color: -fx-light;
+	-fx-border-width: 1 2 1 1;
+}
+
+.combo-box .list-cell:hover {
+	-fx-background-color: -fx-high;
+}
+
+.combo-box .arrow-button{
+    	-fx-background-color: #707070;
+}
+.combo-box .arrow{
+	-fx-background-color: -fx-light;
+}
+
+.button {
+	-fx-background-color: -fx-dark;
+	-fx-text-fill: -fx-light;
+	-fx-border-color: -fx-light;
+}
+
+
+.root {
+	-fx-background: #2a2a2a;
+	-fx-background-color: #2a2a2a;
+}
+
+.myText {
+	-fx-fill: #E9E9E9;
+}
+
+.label {
+	-fx-fill: #E9E9E9;
+}
+
+/* MENU BAR + Top-level MENU BUTTONS */
+/*** The menu bar itself ***/    
+.menu-bar {
+    -fx-background-color: -fx-dark;
+    -fx-border-color: -fx-light;
+    -fx-border-width: 0 0 .5 0;
+}
+
+/*** Top-level menu itself (not selected / hovered) ***/
+.menu-bar > .container > .menu-button {
+    -fx-background-color: -fx-dark;
+}
+
+/*** Top-level menu's label (not selected / hovered) ***/
+.menu-bar > .container > .menu-button > .label {
+    -fx-text-fill: -fx-light;
+}
+
+/*** Top-level menu's label (disabled) ***/
+.menu-bar > .container > .menu-button > .label:disabled {
+    -fx-opacity: 1.0;
+}
+
+/*** Top-level menu itself (selected / hovered) ***/
+.menu-bar > .container > .menu-button:hover,
+.menu-bar > .container > .menu-button:focused,
+.menu-bar > .container > .menu-button:showing {
+    -fx-background-color: -fx-high;
+}
+
+.menu-item .label {
+    -fx-text-fill: -fx-light;
+}
+
+.menu-item:focused {
+     -fx-background-color: -fx-high;
+}
+
+
+.context-menu {
+    -fx-skin: "com.sun.javafx.scene.control.skin.ContextMenuSkin";
+    -fx-background-color: -fx-dark;
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 0 6 6 6, 0 5 5 5, 0 4 4 4;
+/*    -fx-padding: 0.666667em 0.083333em 0.666667em 0.083333em;  8 1 8 1 */
+    -fx-padding: 0.333333em 0.083333em 0.666667em 0.083333em; /* 4 1 8 1 */
+}
+
