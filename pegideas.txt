@@ -6,6 +6,9 @@ Undo Moves ! DONE !
 Redo Moves ! DONE ! 
 Show Last Moves
 Options Menu
+Top 5 Scores + Times (Peg # better than timer)
+Recent 5 Scores w/ ^
+Backgrounds for Triangle (textures / colors?)
 
 Ideas for future projects:
 Rubiks cube AI solver + GUI step show-er.
