@@ -12,3 +12,5 @@ Backgrounds for Triangle (textures / colors?)
 
 Ideas for future projects:
 Rubiks cube AI solver + GUI step show-er.
+Check-in, Check-out system (android app)
+Scheduler for Yvonne Grove (android app)
