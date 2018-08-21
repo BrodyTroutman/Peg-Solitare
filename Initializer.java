@@ -102,7 +102,7 @@ public class Initializer extends Application {
 		tf5.setStyle("-fx-font: 18 arial;");
 		tf5.getStyleClass().add("myText");
 		HBox box = new HBox();
-		box.setTranslateY(120);
+		box.setTranslateY(125);
 		box.setPrefWidth(pegScene.getWidth());
 		box.getChildren().add(tf5);
 		box.setAlignment(Pos.CENTER);
@@ -225,7 +225,7 @@ public class Initializer extends Application {
 
 		// X&Y = Coordinates where to draw circles
 		double x = 80;
-		double y = 170;
+		double y = 180;
 
 		for (int i = 0; i < 5; ++i) {
 			double offx = 0;
